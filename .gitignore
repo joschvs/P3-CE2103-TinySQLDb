@@ -1,0 +1,29 @@
+# IDE
+.idea/
+.vscode/
+*.user
+
+# C++ compilación
+build/
+out/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+*.exe
+*.dll
+*.lib
+*.a
+*.o
+*.obj
+*.pdb
+
+# Archivos binarios del motor (generados en runtime)
+*.bin
+*.idx
+data/
+
+# React / Node
+client/node_modules/
+client/dist/
+client/.env
