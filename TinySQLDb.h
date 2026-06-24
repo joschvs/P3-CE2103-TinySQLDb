@@ -63,8 +63,12 @@ public:
     bool hasIndex(const std::string& db, const std::string& table, const std::string& column);
 };
 
-class QueryProcessor {
-public:
-
+// QueryResult: estructura que devuelve el QueryProcessor al Web API
+struct QueryResult {
+    bool success;
+    std::string message;
+    std::vector<std::string> columns;
+    std::vector<std::vector<std::string>> rows;
 };
+
 #endif //P3_CE2103_TINYSQLDB_TINYSQLDB_H
