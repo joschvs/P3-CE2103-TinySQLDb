@@ -9,7 +9,7 @@ add_executable(P3_CE2103_TinySQLDb
     server/WebAPI.cpp
 )
 
-target_include_directories(P3_CE2103_TinySQLDb PRIVATE server ${CMAKE_SOURCE_DIR})
+target_include_directories(P3_CE2103_TinySQLDb PRIVATE server)
 
 # En Windows linkear con winsock (necesario para httplib)
 if(WIN32)
