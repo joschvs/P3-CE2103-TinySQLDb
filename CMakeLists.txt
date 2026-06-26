@@ -11,6 +11,12 @@ add_executable(P3_CE2103_TinySQLDb
         server/storage/SystemCatalog.h
         server/storage/StoredDataManager.cpp
         server/storage/StoredDataManager.h
+        server/storage/Index.cpp
+        server/storage/Index.h
+        server/storage/BST.cpp
+        server/storage/BST.h
+        server/storage/BTREE.cpp
+        server/storage/BTREE.h
 )
 
 target_include_directories(P3_CE2103_TinySQLDb PRIVATE server)
