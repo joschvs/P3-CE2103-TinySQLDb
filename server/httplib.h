@@ -5434,8 +5434,9 @@ inline bool mmap::open(const char *path) {
   if (wpath.empty()) { return false; }
 
   hFile_ =
-      ::CreateFile2(wpath.c_str(), GENERIC_READ,
-                    FILE_SHARE_READ | FILE_SHARE_WRITE, OPEN_EXISTING, NULL);
+    ::CreateFileW(wpath.c_str(), GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL, NULL);
 
   if (hFile_ == INVALID_HANDLE_VALUE) { return false; }
 
@@ -5466,7 +5467,7 @@ inline bool mmap::open(const char *path) {
     return false;
   }
 
-  addr_ = ::MapViewOfFileFromApp(hMapping_, FILE_MAP_READ, 0, 0);
+  addr_ = ::MapViewOfFile(hMapping_, FILE_MAP_READ, 0, 0, 0);
 
   if (addr_ == nullptr) {
     close();

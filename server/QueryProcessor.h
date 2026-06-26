@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include "TinySQLDb.h"
+#include "storage/StoredDataManager.h"
 
 class QueryProcessor {
 public:

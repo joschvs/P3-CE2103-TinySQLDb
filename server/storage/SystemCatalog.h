@@ -1,5 +1,5 @@
 #pragma once
-#include "server/TinySQLDb.h"
+#include "TinySQLDb.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -28,14 +28,13 @@ public:
     void addIndex(const std::string& db, const std::string& table, const std::string& column, const std::string& type);
 
 private:
-    std::string rootPath; // PROJECT_ROOT + "/data"
+    std::string rootPath;
 
     std::vector<std::string> databases;
     std::map<std::string, std::vector<std::string>> tables;
     std::map<std::string, std::vector<ColumnDefinition>> columns;
     std::map<std::string, std::string> indexes;
 
-    // helpers para persistir cada estructura a su archivo binario correspondiente
     void persistDatabases();
     void persistTables();
     void persistColumns();
@@ -46,5 +45,12 @@ private:
     void loadColumns();
     void loadIndexes();
 
-    std::string catalogPath() const; // rootPath + "/system_catalog"
+    std::string catalogDir() const;
+    std::string databasesFile() const;
+    std::string tablesFile() const;
+    std::string columnsFile() const;
+    std::string indexesFile() const;
+
+    static std::string makeKey(const std::string& db, const std::string& table);
+    static std::string makeKey(const std::string& db, const std::string& table, const std::string& column);
 };
