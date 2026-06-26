@@ -1,4 +1,6 @@
 #include "StoredDataManager.h"
+#include "BST.h"
+#include "BTree.h"
 #include <fstream>
 #include <filesystem>
 #include <ctime>
@@ -10,12 +12,23 @@
 namespace fs = std::filesystem;
 
 
-// Constructor
+// Constructor / Destructor
 
 StoredDataManager::StoredDataManager()
     : rootPath(std::string(PROJECT_ROOT) + "/data"), catalog(rootPath) {
     fs::create_directories(rootPath);
     catalog.load(); // carga el system catalog completo a memoria al arrancar
+    rebuildIndexesFromCatalog(); // reconstruye los árboles en memoria leyendo las tablas
+}
+
+StoredDataManager::~StoredDataManager() {
+    for (auto& [key, index] : indexes) {
+        delete index;
+    }
+}
+
+std::string StoredDataManager::indexKey(const std::string& db, const std::string& table, const std::string& column) {
+    return db + "." + table + "." + column;
 }
 
 
@@ -285,6 +298,15 @@ long StoredDataManager::insertRecord(const std::string& db, const std::string& t
     file.write(bytes.data(), bytes.size());
     file.close();
 
+    // Sincronizar con cualquier índice existente sobre alguna de estas columnas
+    for (size_t i = 0; i < cols.size(); ++i) {
+        std::string key = indexKey(db, table, cols[i].name);
+        auto it = indexes.find(key);
+        if (it != indexes.end()) {
+            it->second->insert(values[i], offset);
+        }
+    }
+
     return offset;
 }
 
@@ -334,11 +356,11 @@ void StoredDataManager::deleteRecords(const std::string& db, const std::string& 
     std::string path = tableFilePath(db, table);
     if (!fs::exists(path)) return;
 
-    // Se reusa readRecords para encontrar qué registros cumplen el filtro
-    // (interesa solo el offset de cada uno que coincide)
+    std::vector<ColumnDefinition> cols = catalog.getColumns(db, table);
+
     std::vector<Record> matches = readRecords(db, table, filter);
 
-    // Se abre en modo lectura+escritura para poder hacer seek() y sobreescribir solo el flag
+    // Abrimos en modo lectura+escritura para poder hacer seek() y sobreescribir solo el flag
     std::fstream file(path, std::ios::binary | std::ios::in | std::ios::out);
     if (!file.is_open()) return;
 
@@ -346,6 +368,15 @@ void StoredDataManager::deleteRecords(const std::string& db, const std::string& 
     for (const auto& record : matches) {
         file.seekp(record.offset); // ir directo al offset de ese registro
         file.write(&inactiveFlag, 1); // sobreescribir solo el primer byte (el flag)
+
+        // Sincronizar con cualquier índice existente: quitar la entrada de este registro
+        for (size_t i = 0; i < cols.size(); ++i) {
+            std::string key = indexKey(db, table, cols[i].name);
+            auto it = indexes.find(key);
+            if (it != indexes.end()) {
+                it->second->remove(record.values[i]);
+            }
+        }
     }
 }
 
@@ -358,8 +389,7 @@ void StoredDataManager::updateRecords(const std::string& db, const std::string& 
 
     std::vector<ColumnDefinition> cols = catalog.getColumns(db, table);
 
-    // Encontrar en qué posición (índice) y en qué byte offset dentro del registro
-    // está la columna que vamos a actualizar
+    // Encontrar en qué posición (índice) y en qué byte offset dentro del registro está la columna que vamos a actualizar
     int colIndex = -1;
     long byteOffsetInRecord = 1; // arranca en 1 porque el byte 0 es el flag de eliminado
     for (size_t i = 0; i < cols.size(); ++i) {
@@ -407,8 +437,93 @@ void StoredDataManager::updateRecords(const std::string& db, const std::string& 
         }
     }
 
+    // Sincronizar con el índice de ESTA columna (si existe)
+    std::string key = indexKey(db, table, column);
+    auto idxIt = indexes.find(key);
+
     for (const auto& record : matches) {
         file.seekp(record.offset + byteOffsetInRecord); // ir directo a la columna dentro del registro
         file.write(newBytes.data(), colSize);
+
+        if (idxIt != indexes.end()) {
+            idxIt->second->remove(record.values[colIndex]); // valor viejo
+            idxIt->second->insert(newValue, record.offset);  // valor nuevo
+        }
+    }
+}
+
+
+// Índices: createIndex
+
+void StoredDataManager::createIndex(const std::string& db, const std::string& table, const std::string& column, const std::string& type) {
+    std::string key = indexKey(db, table, column);
+
+    // Creamos el árbol correcto según el tipo pedido
+    Index* index;
+    if (type == "BTREE") {
+        index = new BTree();
+    } else { // "BST"
+        index = new BST();
+    }
+
+    // Encontrar la posición de la columna dentro de las definiciones, para poder extraer el ColumnValue correcto de cada registro existente
+    std::vector<ColumnDefinition> cols = catalog.getColumns(db, table);
+    int colIndex = -1;
+    for (size_t i = 0; i < cols.size(); ++i) {
+        if (cols[i].name == column) {
+            colIndex = static_cast<int>(i);
+            break;
+        }
+    }
+
+    // Se leen los registros existentes y se insertan en el árbol nuevo
+    if (colIndex != -1) {
+        std::vector<Record> allRecords = readRecords(db, table, nullptr);
+        for (const auto& record : allRecords) {
+            index->insert(record.values[colIndex], record.offset);
+        }
+    }
+
+    indexes[key] = index;
+    catalog.addIndex(db, table, column, type); // persistir en el catalog que este índice existe
+}
+
+
+// Índices: lookupIndex
+
+long StoredDataManager::lookupIndex(const std::string& db, const std::string& table, const std::string& column, const ColumnValue& value) {
+    std::string key = indexKey(db, table, column);
+    auto it = indexes.find(key);
+    if (it == indexes.end()) return -1; // no hay índice en esta columna
+
+    return it->second->search(value);
+}
+
+
+// Índices: reconstrucción al arrancar el servidor
+
+void StoredDataManager::rebuildIndexesFromCatalog() {
+    // se recorren todas las bases de datos y tablas para encontrar qué índices existían según el catalog, y los reconstruimos leyendo cada tabla
+    for (const auto& db : catalog.getDatabases()) {
+        for (const auto& table : catalog.getTables(db)) {
+            std::vector<ColumnDefinition> cols = catalog.getColumns(db, table);
+
+            for (size_t i = 0; i < cols.size(); ++i) {
+                const std::string& column = cols[i].name;
+
+                if (!catalog.hasIndex(db, table, column)) continue;
+
+                std::string type = catalog.getIndexType(db, table, column);
+                Index* index = (type == "BTREE") ? static_cast<Index*>(new BTree())
+                                                   : static_cast<Index*>(new BST());
+
+                std::vector<Record> allRecords = readRecords(db, table, nullptr);
+                for (const auto& record : allRecords) {
+                    index->insert(record.values[i], record.offset);
+                }
+
+                indexes[indexKey(db, table, column)] = index;
+            }
+        }
     }
 }
