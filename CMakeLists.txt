@@ -20,7 +20,10 @@ add_executable(P3_CE2103_TinySQLDb
 )
 
 target_include_directories(P3_CE2103_TinySQLDb PRIVATE server)
-target_compile_definitions(P3_CE2103_TinySQLDb PRIVATE PROJECT_ROOT="${CMAKE_SOURCE_DIR}")
+target_compile_definitions(P3_CE2103_TinySQLDb PRIVATE
+        PROJECT_ROOT="${CMAKE_SOURCE_DIR}"
+        _WIN32_WINNT=0x0A00
+)
 
 # En Windows linkear con winsock (necesario para httplib)
 if(WIN32)
