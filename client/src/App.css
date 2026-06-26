@@ -1,0 +1,158 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #0D1B2A;
+  color: #E0E1DD;
+}
+
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #415A77;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #E0E1DD;
+}
+
+.current-db {
+  font-size: 0.9rem;
+  color: #778DA9;
+  background: #1B263B;
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.sql-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.sql-textarea {
+  width: 100%;
+  font-family: "Consolas", monospace;
+  font-size: 0.95rem;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #415A77;
+  background: #1B263B;
+  color: #E0E1DD;
+  resize: vertical;
+}
+
+.sql-textarea::placeholder {
+  color: #778DA9;
+}
+
+.sql-textarea:focus {
+  outline: none;
+  border-color: #778DA9;
+  box-shadow: 0 0 0 3px rgba(119, 141, 169, 0.25);
+}
+
+.run-button {
+  align-self: flex-end;
+  padding: 8px 20px;
+  border-radius: 6px;
+  border: none;
+  background: #415A77;
+  color: #E0E1DD;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.run-button:hover:not(:disabled) {
+  background: #4F6C8C;
+}
+
+.run-button:disabled {
+  background: #1B263B;
+  color: #778DA9;
+  cursor: not-allowed;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result-block {
+  border: 1px solid #415A77;
+  border-radius: 8px;
+  padding: 12px;
+  background: #1B263B;
+}
+
+.result-sql {
+  font-family: "Consolas", monospace;
+  font-size: 0.85rem;
+  color: #778DA9;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.status-success {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+}
+
+.status-error {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+}
+
+.status-time {
+  margin-left: auto;
+  color: #778DA9;
+  font-size: 0.8rem;
+}
+
+.result-table {
+  width: 100%;
+  margin-top: 12px;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.result-table th,
+.result-table td {
+  border: 1px solid #415A77;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.result-table th {
+  background: #0D1B2A;
+  color: #778DA9;
+}
+
+.result-table td {
+  background: #1B263B;
+}
