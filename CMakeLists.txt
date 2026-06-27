@@ -17,6 +17,7 @@ add_executable(P3_CE2103_TinySQLDb
         server/storage/BST.h
         server/storage/BTREE.cpp
         server/storage/BTREE.h
+        client/src/index.css
 )
 
 target_include_directories(P3_CE2103_TinySQLDb PRIVATE server)

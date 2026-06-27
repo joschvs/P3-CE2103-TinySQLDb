@@ -127,7 +127,17 @@ std::string WebAPI::extractJsonField(const std::string& json, const std::string&
         quoteClose++;
     }
 
-    return json.substr(quoteOpen + 1, quoteClose - quoteOpen - 1);
+    std::string raw = json.substr(quoteOpen + 1, quoteClose - quoteOpen - 1);
+    std::string result;
+    for (size_t i = 0; i < raw.size(); ++i) {
+        if (raw[i] == '\\' && i + 1 < raw.size() && (raw[i+1] == '"' || raw[i+1] == '\\')) {
+            result += raw[i+1];
+            i++;
+        } else {
+            result += raw[i];
+        }
+    }
+    return result;
 }
 
 // Escapa caracteres especiales para JSON válido
